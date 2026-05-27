@@ -1,0 +1,65 @@
+{
+  "title": "Pesquisa de Satisfação FATEC",
+  "description": "Formulário para coleta de feedback dos alunos sobre infraestrutura e ensino.",
+  "isPublic": false,
+  "projectId": "dccec5cb-81d3-4175-a1bc-a774bc9f808f",
+  "structure": [
+    {
+      "fieldId": "nome_completo",
+      "label": "Nome Completo",
+      "type": "text",
+      "required": true,
+      "options": []
+    },
+    {
+      "fieldId": "idade",
+      "label": "Idade",
+      "type": "number",
+      "required": true,
+      "options": []
+    },
+    {
+      "fieldId": "curso",
+      "label": "Curso",
+      "type": "select",
+      "required": true,
+      "options": [
+        "ADS",
+        "Logística",
+        "RH",
+        "Gestão Empresarial"
+      ]
+    },
+    {
+      "fieldId": "laboratorios",
+      "label": "Quais laboratórios você utiliza?",
+      "type": "checkbox",
+      "required": false,
+      "options": [
+        "Informática",
+        "Eletrônica",
+        "Redes",
+        "Hardware"
+      ]
+    },
+    {
+      "fieldId": "avaliacao_geral",
+      "label": "Avaliação Geral",
+      "type": "select",
+      "required": true,
+      "options": [
+        "Excelente",
+        "Boa",
+        "Regular",
+        "Ruim"
+      ]
+    },
+    {
+      "fieldId": "comentarios",
+      "label": "Comentários adicionais",
+      "type": "textarea",
+      "required": false,
+      "options": []
+    }
+  ]
+}
