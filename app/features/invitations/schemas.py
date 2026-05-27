@@ -38,3 +38,10 @@ class InvitationResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ProjectMemberResponse(BaseModel):
+    role: str
+    user: UserSimple
+
+    class Config:
+        from_attributes = True

@@ -35,3 +35,19 @@ class InvitationRepository(ABC):
         email: str
     ):
         pass
+
+    @abstractmethod
+    async def find_by_id(self, invitation_id: str):
+        pass
+
+    @abstractmethod
+    async def update_status(
+        self,
+        invitation_id: str,
+        status: str
+    ):
+        pass
+
+    @abstractmethod
+    async def list_project_members(self, project_id: str):
+        pass

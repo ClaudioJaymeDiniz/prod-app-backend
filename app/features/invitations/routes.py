@@ -6,10 +6,15 @@ from app.features.auth.dependencies import get_current_user
 from app.features.invitations.schemas import (
     InvitationCreate,
     InvitationResponse,
+    ProjectMemberResponse,
 )
+
 from app.features.invitations.dependencies import (
     get_create_invitation_use_case,
     get_list_my_pending_invitations_use_case,
+    get_accept_invitation_use_case,
+    get_revoke_invitation_use_case,
+    get_list_project_members_use_case,
 )
 
 
@@ -47,4 +52,49 @@ async def list_my_pending_invitations(
 ):
     return await use_case.execute(
         current_user.email
+    )
+
+@router.post(
+    "/{invitation_id}/accept",
+    response_model=InvitationResponse
+)
+async def accept_invitation(
+    invitation_id: str,
+    current_user = Depends(get_current_user),
+    use_case = Depends(get_accept_invitation_use_case)
+):
+    return await use_case.execute(
+        invitation_id,
+        current_user.id,
+        current_user.email
+    )
+
+
+@router.post(
+    "/{invitation_id}/revoke",
+    response_model=InvitationResponse
+)
+async def revoke_invitation(
+    invitation_id: str,
+    current_user = Depends(get_current_user),
+    use_case = Depends(get_revoke_invitation_use_case)
+):
+    return await use_case.execute(
+        invitation_id,
+        current_user.id
+    )
+
+
+@router.get(
+    "/project/{project_id}/members",
+    response_model=List[ProjectMemberResponse]
+)
+async def list_project_members(
+    project_id: str,
+    current_user = Depends(get_current_user),
+    use_case = Depends(get_list_project_members_use_case)
+):
+    return await use_case.execute(
+        project_id,
+        current_user.id
     )

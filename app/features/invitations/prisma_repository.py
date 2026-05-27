@@ -84,3 +84,37 @@ class PrismaInvitationRepository(InvitationRepository):
                 "status": "ACCEPTED"
             }
         )
+    
+    async def find_by_id(self, invitation_id: str):
+        return await db.projectinvitation.find_unique(
+            where={
+                "id": invitation_id
+            },
+            include={
+                "project": True
+            }
+        )
+
+    async def update_status(
+        self,
+        invitation_id: str,
+        status: str
+    ):
+        return await db.projectinvitation.update(
+            where={
+                "id": invitation_id
+            },
+            data={
+                "status": status
+            }
+        )
+
+    async def list_project_members(self, project_id: str):
+        return await db.userproject.find_many(
+            where={
+                "projectId": project_id
+            },
+            include={
+                "user": True
+            }
+        )
