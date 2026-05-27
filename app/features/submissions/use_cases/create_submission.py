@@ -1,7 +1,10 @@
 import traceback
+from app.features.forms.utils import normalize_form_structure
+from app.features.forms.services.form_validation_service import FormValidationService
 
 from app.features.submissions.exceptions import (
     InvalidSubmissionPayloadException,
+    InvalidSubmissionDataException,
     SubmissionAlreadyExistsException,
     SubmissionCreateException,
     SubmissionNotFoundException,
@@ -12,9 +15,9 @@ from app.infrastructure.mail.mail_service import send_submission_notification
 
 class CreateSubmissionUseCase:
 
-    def __init__(self, submission_repository, invitation_repository):
+    def __init__(self, submission_repository, project_access_service):
         self.submission_repository = submission_repository
-        self.invitation_repository = invitation_repository
+        self.project_access_service = project_access_service
 
     async def execute(self, data: dict, user_id: str, user_email: str):
         submission_id = data.get("id")
@@ -33,11 +36,21 @@ class CreateSubmissionUseCase:
             if form.project and form.project.deletedAt is not None:
                 raise FormNotAvailableForSubmissionException()
 
+            structure = normalize_form_structure(form.structure or [])
+
+            try:
+                FormValidationService.validate(
+                    structure=structure,
+                    form_data=form_data
+                )
+            except ValueError as error:
+                raise InvalidSubmissionDataException(error.args[0])
+
             if not form.isPublic:
-                await self._check_project_access(
-                    project_id=form.projectId,
-                    user_id=user_id,
-                    user_email=user_email
+                await self.project_access_service.ensure_can_submit_to_project(
+                    form.projectId,
+                    user_id,
+                    user_email
                 )
 
             submission = await self.submission_repository.create(
@@ -63,6 +76,8 @@ class CreateSubmissionUseCase:
 
         except (
             InvalidSubmissionPayloadException,
+            InvalidSubmissionDataException,
+            SubmissionAlreadyExistsException,
             SubmissionNotFoundException,
             FormNotAvailableForSubmissionException,
         ):
@@ -78,35 +93,6 @@ class CreateSubmissionUseCase:
                 raise SubmissionAlreadyExistsException()
 
             raise SubmissionCreateException()
-
-    async def _check_project_access(
-        self,
-        project_id: str,
-        user_id: str,
-        user_email: str
-    ):
-        project = await self.invitation_repository.find_project_by_id(
-            project_id
-        )
-
-        if not project:
-            raise SubmissionNotFoundException("Formulário não encontrado.")
-
-        if project.ownerId == user_id:
-            return
-
-        accepted_invitation = (
-            await self.invitation_repository
-            .find_accepted_by_project_and_email(
-                project_id,
-                user_email
-            )
-        )
-
-        if accepted_invitation:
-            return
-
-        raise SubmissionNotFoundException("Formulário não encontrado.")
 
     async def _notify_owner(self, form_id: str):
         form_info = await self.submission_repository.find_form_with_project_owner(

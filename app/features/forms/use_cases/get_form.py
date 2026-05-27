@@ -10,9 +10,9 @@ from app.features.forms.utils import (
 
 class GetFormUseCase:
 
-    def __init__(self, form_repository, invitation_repository):
+    def __init__(self, form_repository, project_access_service):
         self.form_repository = form_repository
-        self.invitation_repository = invitation_repository
+        self.project_access_service = project_access_service
 
     async def execute(self, form_id: str, user_id: str, user_email: str):
         form = await self.form_repository.find_by_id_with_project(form_id)
@@ -24,7 +24,7 @@ class GetFormUseCase:
             raise ArchivedProjectException()
 
         if not form.isPublic:
-            await self._check_access(
+            await self.project_access_service.ensure_can_access_project(
                 form.projectId,
                 user_id,
                 user_email
@@ -43,34 +43,3 @@ class GetFormUseCase:
             )
 
         return form
-
-    async def _check_access(
-        self,
-        project_id: str,
-        user_id: str,
-        email: str
-    ):
-        project = await self.invitation_repository.find_project_by_id(
-            project_id
-        )
-
-        if not project:
-            raise FormNotFoundException()
-
-        # OWNER
-        if project.ownerId == user_id:
-            return
-
-        # convite aceito
-        accepted_invitation = (
-            await self.invitation_repository
-            .find_accepted_by_project_and_email(
-                project_id,
-                email
-            )
-        )
-
-        if accepted_invitation:
-            return
-
-        raise FormNotFoundException()

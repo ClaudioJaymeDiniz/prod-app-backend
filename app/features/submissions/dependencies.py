@@ -1,7 +1,8 @@
 from fastapi import Depends
 
 from app.features.submissions.prisma_repository import PrismaSubmissionRepository
-from app.features.invitations.prisma_repository import PrismaInvitationRepository
+
+from app.features.projects.dependencies import get_project_access_service
 
 from app.features.submissions.use_cases.create_submission import CreateSubmissionUseCase
 from app.features.submissions.use_cases.update_submission import UpdateSubmissionUseCase
@@ -13,20 +14,14 @@ from app.features.submissions.use_cases.list_all_form_submissions import ListAll
 def get_submission_repository():
     return PrismaSubmissionRepository()
 
-
-def get_invitation_repository():
-    return PrismaInvitationRepository()
-
-
 def get_create_submission_use_case(
     submission_repository = Depends(get_submission_repository),
-    invitation_repository = Depends(get_invitation_repository)
+    project_access_service = Depends(get_project_access_service)
 ):
     return CreateSubmissionUseCase(
         submission_repository,
-        invitation_repository
+        project_access_service
     )
-
 
 def get_update_submission_use_case(
     submission_repository = Depends(get_submission_repository)

@@ -34,3 +34,7 @@ class SubmissionRepository(ABC):
     @abstractmethod
     async def list_by_form_and_user(self, form_id: str, user_id: str):
         pass
+
+    @abstractmethod
+    async def find_by_id_with_form(self, submission_id: str):
+        pass

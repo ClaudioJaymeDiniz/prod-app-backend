@@ -65,3 +65,11 @@ class PrismaSubmissionRepository(SubmissionRepository):
             },
             order={"createdAt": "desc"}
         )
+    
+    async def find_by_id_with_form(self, submission_id: str):
+        return await db.submission.find_unique(
+            where={"id": submission_id},
+            include={
+                "form": True
+            }
+        )

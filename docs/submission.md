@@ -1,67 +1,358 @@
-📑 Referência de API: Módulo de Submissões (Submission)
+# 📝 Referência de Arquitetura e API — Módulo Submissions
 
-Este módulo gerencia o armazenamento, a integridade e o controle de visibilidade das respostas enviadas pelos coletores em campo.
-🗄️ Modelo de Dados (Prisma Entity)
+O módulo `Submissions` é responsável pelo envio, atualização e gerenciamento das respostas dos formulários dinâmicos do sistema.
 
-A submissão é o registro final da coleta de dados.
-Campo	Tipo	Descrição
-id	String	Chave primária. Gerada pelo Mobile (UUID) para garantir unicidade no Sync Offline.
-formData	Json	Objeto contendo o par pergunta: resposta.
-userId	String	FK para o usuário que realizou a coleta.
-formId	String	FK para o formulário respondido.
-createdAt	DateTime	Data e hora exata do recebimento no servidor.
-🛠️ Service: SubmissionService
+Este módulo representa o núcleo funcional do Smart Forms, conectando:
 
-Responsável pelo processamento de dados e regras de visibilidade.
+- usuários
+- formulários
+- projetos
+- analytics
+- exportação
+- uploads
+- notificações
 
-    create_submission:
+---
 
-        Persiste a resposta no banco.
+# 🧱 Estrutura da Feature
 
-        Implementação do RF 15: Realiza uma busca profunda (deep include) para encontrar o e-mail do dono do projeto e disparar uma notificação via send_submission_notification.
+```txt
+app/features/submissions/
+├── routes.py
+├── schemas.py
+├── dependencies.py
+├── repositories.py
+├── prisma_repository.py
+├── exceptions.py
+└── use_cases/
+    ├── create_submission.py
+    ├── update_submission.py
+    ├── list_my_submissions.py
+    ├── list_form_submissions.py
+    └── list_all_form_submissions.py
 
-    update_submission:
+    ```
 
-        Valida se o user_id da requisição é o mesmo que criou a submissão.
+🏛️ Arquitetura Aplicada
 
-        Impede que um coletor altere a resposta de outro.
+O módulo segue:
 
-    get_submissions_by_context:
+Feature-Based Architecture
+Clean Architecture leve
+Repository Pattern
+Use Cases
+Dependency Injection
+Validation Service
+Infrastructure Layer
+Exception Handling centralizado
+🎯 Objetivo do Módulo
 
-        Lógica de Privilégio:
+O módulo é responsável por:
 
-            Se o usuário é Proprietário (Owner) do projeto, a query retorna o conjunto total de respostas do formulário.
+registrar respostas
+validar respostas dinamicamente
+controlar acesso aos formulários
+alimentar analytics
+alimentar exportação CSV
+suportar sync offline
+permitir edição controlada
+integrar uploads
+notificar owners
+📦 Relação com Outros Módulos
+| Módulo      | Integração          |
+| ----------- | ------------------- |
+| Auth        | usuário autenticado |
+| Forms       | estrutura dinâmica  |
+| Projects    | permissões          |
+| Invitations | acesso privado      |
+| Uploads     | imagens             |
+| Mail        | notificações        |
+| Analytics   | dashboards          |
+| CSV Export  | exportação          |
 
-            Se o usuário é Coletor (Collector), a query é filtrada para retornar apenas as respostas vinculadas ao seu próprio userId.
+🧠 Estratégia Offline
 
-🚀 Rotas e Endpoints (/submissions)
-1. Enviar Resposta
+O sistema foi preparado para mobile offline-first.
 
-    Rota: POST /submissions/
+O frontend/mobile gera o UUID antes do envio:
 
-    Schema de Entrada: SubmissionCreate
+{
+  "id": "uuid-gerado-no-mobile"
+}
 
-    Importância Técnica: Diferente de outros modelos, o id é enviado pelo cliente. Isso permite que o App Mobile gere o ID mesmo sem internet; ao recuperar a conexão, o backend aceita esse ID, evitando duplicidade em caso de reenvios.
+Benefícios:
 
-2. Listar Minhas Respostas
+sync offline posterior
+prevenção de duplicidade
+suporte a filas locais
+reconciliação futura
+🔐 Controle de Acesso
+Formulário Público
 
-    Rota: GET /submissions/me
+Qualquer usuário autenticado pode responder.
 
-    Descrição: Retorna o histórico pessoal do coletor logado em todos os projetos.
+Formulário Privado
 
-3. Consultar Respostas de um Formulário
+O usuário precisa:
 
-    Rota: GET /submissions/form/{form_id}
+OWNER
+OU
+convite ACCEPTED
+🧩 Validação Dinâmica
 
-    Comportamento Dinâmico: Esta rota muda o resultado baseado no cargo (Role) do usuário. É o endpoint principal para alimentar as listas de resultados no App.
+O backend NÃO aceita qualquer JSON.
 
-4. Editar Resposta Existente
+A submissão é validada contra a estrutura do formulário.
 
-    Rota: PATCH /submissions/{submission_id}
+📌 Campos Validados
+| Tipo     | Validado |
+| -------- | -------- |
+| text     | ✅        |
+| textarea | ✅        |
+| number   | ✅        |
+| select   | ✅        |
+| checkbox | ✅        |
+| image    | ✅        |
+| file     | ✅        |
 
-    Uso: Permite correções em dados enviados, desde que o usuário possua a propriedade do registro.
+🧠 Validation Service
+FormValidationService
 
-🔐 Schemas de Validação (Pydantic)
-Classe	Detalhe
-SubmissionCreate	Exige id (string), formId e formData (dicionário).
-SubmissionResponse	Inclui o objeto UserSimple para que o Dono do projeto veja o nome/email de quem respondeu.
+Responsável por:
+
+validar campos obrigatórios
+validar tipos
+validar opções
+validar uploads
+impedir payload inválido
+🚀 Endpoints
+POST /submissions/
+
+Cria uma nova resposta.
+
+🔐 Autenticação
+
+Requer:
+
+Authorization: Bearer <token>
+📥 Request
+{
+  "id": "6f7d5b6a-f8e6-4e51-97c3-79991a52c001",
+  "formId": "form-id",
+  "formData": {
+    "nome_completo": "Claudio",
+    "idade": 25,
+    "curso": "ADS",
+    "avaliacao_geral": "Excelente"
+  }
+}
+📤 Response
+{
+  "id": "6f7d5b6a-f8e6-4e51-97c3-79991a52c001",
+  "userId": "user-id",
+  "formId": "form-id",
+  "formData": {
+    "nome_completo": "Claudio",
+    "idade": 25
+  },
+  "createdAt": "2026-05-26T20:00:00Z"
+}
+PATCH /submissions/{id}
+
+Atualiza uma submissão existente.
+
+🔒 Regra
+
+Somente o dono da resposta pode editar.
+
+📥 Request
+{
+  "formData": {
+    "nome_completo": "Claudio Atualizado"
+  }
+}
+GET /submissions/me
+
+Lista as respostas do usuário autenticado.
+
+GET /submissions/form/{form_id}
+
+Lista respostas do formulário.
+
+🔒 Regras
+| Usuário | Resultado          |
+| ------- | ------------------ |
+| OWNER   | vê todas           |
+| coletor | vê apenas próprias |
+
+GET /submissions/form/{form_id}/all
+
+Lista TODAS as respostas do formulário.
+
+🔒 Regra
+
+Somente OWNER pode acessar.
+
+☁️ Integração com Uploads
+
+As imagens NÃO são salvas diretamente na submissão.
+
+Fluxo correto:
+
+Frontend → Uploads → Cloudinary → URL → Submission
+📌 Exemplo com imagem
+{
+  "formData": {
+    "nome": "Claudio",
+    "foto_atividade": "https://res.cloudinary.com/demo/image/upload/img.png"
+  }
+}
+📧 Notificações
+
+Ao criar uma submissão:
+
+owner do projeto recebe email
+
+Informando:
+
+projeto
+formulário
+nova resposta
+📊 Analytics
+
+As submissões alimentam:
+
+dashboards
+gráficos
+exportação CSV
+filtros
+estatísticas
+🧠 Use Cases
+CreateSubmissionUseCase
+
+Responsável por:
+
+validar payload
+validar formulário
+validar acesso
+validar dados dinâmicos
+impedir submissão em projeto arquivado
+salvar submissão
+enviar notificação
+UpdateSubmissionUseCase
+
+Responsável por:
+
+validar ownership
+validar dados atualizados
+atualizar submissão
+ListMySubmissionsUseCase
+
+Responsável por:
+
+listar respostas do usuário
+ListFormSubmissionsUseCase
+
+Responsável por:
+
+listar respostas conforme permissão
+ListAllFormSubmissionsUseCase
+
+Responsável por:
+
+listar todas respostas do owner
+🗄️ Repository Pattern
+SubmissionRepository
+
+Define contratos para:
+
+create
+update
+find
+list
+queries especializadas
+PrismaSubmissionRepository
+
+Implementação usando:
+
+Prisma ORM
+📌 JSON Storage
+
+As respostas são armazenadas em:
+
+formData Json
+
+Benefícios:
+
+flexibilidade
+formulários dinâmicos
+evolução sem migration
+suporte offline
+🚨 Exceptions
+InvalidSubmissionPayloadException
+
+Payload obrigatório inválido.
+
+{
+  "detail": "Payload inválido. Campos obrigatórios: id, formId e formData."
+}
+InvalidSubmissionDataException
+
+Os dados não respeitam a estrutura do formulário.
+
+{
+  "detail": {
+    "message": "Os dados enviados não respeitam a estrutura do formulário.",
+    "errors": [
+      {
+        "fieldId": "idade",
+        "label": "Idade",
+        "message": "O valor deve ser numérico."
+      }
+    ]
+  }
+}
+SubmissionAlreadyExistsException
+
+UUID já registrado.
+
+{
+  "detail": "Submissão já registrada."
+}
+SubmissionNotFoundException
+
+Resposta não encontrada.
+
+{
+  "detail": "Resposta não encontrada."
+}
+SubmissionAccessDeniedException
+
+Usuário sem permissão.
+
+{
+  "detail": "Resposta não encontrada."
+}
+FormNotAvailableForSubmissionException
+
+Projeto arquivado.
+
+{
+  "detail": "Projeto arquivado não pode receber respostas."
+}
+
+# 🧪 Fluxos Validados
+
+| Fluxo                  | Status |
+| ---------------------- | ------ |
+| criar submissão        | ✅      |
+| editar submissão       | ✅      |
+| listar próprias        | ✅      |
+| owner visualizar todas | ✅      |
+| formulário privado     | ✅      |
+| formulário público     | ✅      |
+| required fields        | ✅      |
+| validação dinâmica     | ✅      |
+| upload integrado       | ✅      |
+| email notification     | ✅      |
+| offline UUID           | ✅      |

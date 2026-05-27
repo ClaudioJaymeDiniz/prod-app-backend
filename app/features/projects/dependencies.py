@@ -1,4 +1,6 @@
 from fastapi import Depends
+from app.features.invitations.prisma_repository import PrismaInvitationRepository
+from app.features.projects.services.project_access_service import ProjectAccessService
 
 from app.features.projects.prisma_repository import PrismaProjectRepository
 
@@ -62,3 +64,16 @@ def get_list_archived_projects_use_case(
     project_repository = Depends(get_project_repository)
 ):
     return ListArchivedProjectsUseCase(project_repository)
+
+def get_invitation_repository():
+    return PrismaInvitationRepository()
+
+
+def get_project_access_service(
+    project_repository = Depends(get_project_repository),
+    invitation_repository = Depends(get_invitation_repository)
+):
+    return ProjectAccessService(
+        project_repository,
+        invitation_repository
+    )
