@@ -22,3 +22,7 @@ class UserRepository(ABC):
     @abstractmethod
     async def find_by_reset_token(self, token: str):
         pass
+
+    @abstractmethod
+    async def search(self, query: str):
+        pass

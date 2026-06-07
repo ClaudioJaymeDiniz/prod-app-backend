@@ -11,3 +11,15 @@ class InvitationAlreadyExistsException(BadRequestException):
 
 class InvitationCreateException(BadRequestException):
     detail = "Não foi possível criar o convite"
+
+
+class InvitationNotFoundException(NotFoundException):
+    detail = "Convite não encontrado"
+
+
+class InvitationAccessDeniedException(NotFoundException):
+    detail = "Convite não encontrado"
+
+
+class InvitationAlreadyRespondedException(BadRequestException):
+    detail = "Convite já foi respondido"

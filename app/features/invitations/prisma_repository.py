@@ -16,6 +16,25 @@ class PrismaInvitationRepository(InvitationRepository):
             }
         )
 
+    async def find_invitation_by_id(self, invitation_id: str):
+        return await db.projectinvitation.find_unique(
+            where={
+                "id": invitation_id
+            },
+            include={
+                "project": {
+                    "include": {
+                        "owner": True,
+                        "members": {
+                            "include": {
+                                "user": True
+                            }
+                        }
+                    }
+                }
+            }
+        )
+
     async def find_user_by_email(self, email: str):
         return await db.user.find_unique(
             where={
@@ -82,5 +101,44 @@ class PrismaInvitationRepository(InvitationRepository):
                     "mode": "insensitive"
                 },
                 "status": "ACCEPTED"
+            }
+        )
+
+    async def update_invitation_status(
+        self,
+        invitation_id: str,
+        status: str,
+        user_id: str | None = None,
+    ):
+        data = {"status": status}
+        if user_id is not None:
+            data["userId"] = user_id
+
+        return await db.projectinvitation.update(
+            where={
+                "id": invitation_id
+            },
+            data=data,
+            include={
+                "project": {
+                    "include": {
+                        "owner": True
+                    }
+                }
+            }
+        )
+    
+    async def list_pending_by_project(self, project_id: str):
+        return await db.projectinvitation.find_many(
+            where={
+                "projectId": project_id,
+                "status": "PENDING"
+            },
+            include={
+                "project": {
+                    "include": {
+                        "owner": True
+                    }
+                }
             }
         )

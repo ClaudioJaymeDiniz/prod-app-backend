@@ -2,7 +2,7 @@
   "title": "Pesquisa de Satisfação FATEC",
   "description": "Formulário para coleta de feedback dos alunos sobre infraestrutura e ensino.",
   "isPublic": false,
-  "projectId": "dccec5cb-81d3-4175-a1bc-a774bc9f808f",
+  "projectId": "d1a60ecc-a732-4aa2-9544-759b65c17617",
   "structure": [
     {
       "fieldId": "nome_completo",

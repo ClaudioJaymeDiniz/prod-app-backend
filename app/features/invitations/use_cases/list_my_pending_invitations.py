@@ -7,3 +7,5 @@ class ListMyPendingInvitationsUseCase:
         return await self.invitation_repository.list_pending_by_email(
             email
         )
+    
+    

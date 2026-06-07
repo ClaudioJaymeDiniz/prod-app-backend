@@ -32,6 +32,7 @@ class InvitationResponse(BaseModel):
     id: str
     email: str
     projectId: str
+    role: str
     status: InvitationStatus
     project: Optional[ProjectSimpleResponse] = None
     createdAt: datetime

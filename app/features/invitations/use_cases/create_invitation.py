@@ -1,7 +1,6 @@
-from app.features.invitations.exceptions import (
-    InvitationProjectAccessDeniedException,
-)
+from app.features.invitations.exceptions import InvitationProjectAccessDeniedException
 from app.infrastructure.mail.mail_service import send_invitation_email
+from app.infrastructure.notifications.expo_push_service import send_expo_push_notification
 
 
 class CreateInvitationUseCase:
@@ -25,34 +24,40 @@ class CreateInvitationUseCase:
         if not project or project.ownerId != owner_id:
             raise InvitationProjectAccessDeniedException()
 
-        registered_user = await self.invitation_repository.find_user_by_email(
-            email_clean
-        )
+        registered_user = await self.invitation_repository.find_user_by_email(email_clean)
 
-        if registered_user:
-            await self.invitation_repository.upsert_project_member(
-                user_id=registered_user.id,
-                project_id=project_id,
-                role=role
+        status = "PENDING"
+        user_id = registered_user.id if registered_user else None
+
+        try:
+            await send_invitation_email(
+                email_clean,
+                project.name
+            )
+        except Exception:
+            print(
+                f"Erro ao enviar e-mail para {email_clean}, "
+                "mas convite será criado."
             )
 
-            status = "ACCEPTED"
-            user_id = registered_user.id
+        if registered_user:
+            push_token = None
+            if registered_user.globalMetadata and isinstance(registered_user.globalMetadata, dict):
+                push_token = registered_user.globalMetadata.get("expoPushToken")
 
-        else:
-            status = "PENDING"
-            user_id = None
-
-            try:
-                await send_invitation_email(
-                    email_clean,
-                    project.name
-                )
-            except Exception:
-                print(
-                    f"Erro ao enviar e-mail para {email_clean}, "
-                    "mas convite será criado."
-                )
+            if push_token:
+                try:
+                    await send_expo_push_notification(
+                        token=push_token,
+                        title="Novo convite para projeto",
+                        body=f"Você foi convidado para participar de {project.name}",
+                        data={
+                            "type": "project_invitation",
+                            "projectId": project_id,
+                        },
+                    )
+                except Exception as exc:
+                    print(f"Falha ao enviar push de convite: {exc}")
 
         return await self.invitation_repository.create(
             {

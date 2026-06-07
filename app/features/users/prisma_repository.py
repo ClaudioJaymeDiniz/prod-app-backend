@@ -32,3 +32,24 @@ class PrismaUserRepository(UserRepository):
                 }
             }
         )
+    
+    async def search(self, query: str):
+        return await db.user.find_many(
+            where={
+                "OR": [
+                    {
+                        "name": {
+                            "contains": query,
+                            "mode": "insensitive"
+                        }
+                    },
+                    {
+                        "email": {
+                            "contains": query,
+                            "mode": "insensitive"
+                        }
+                    }
+                ]
+            },
+            take=10
+        )

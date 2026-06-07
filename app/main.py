@@ -14,6 +14,8 @@ from app.features.invitations.routes import router as invitations_router
 from app.features.forms.routes import router as forms_router
 from app.features.uploads.routes import router as uploads_router
 from app.features.submissions.routes import router as submissions_router
+from app.features.users.routes import router as users_router
+
 
 
 @asynccontextmanager
@@ -49,3 +51,8 @@ app.include_router(invitations_router)
 app.include_router(forms_router)
 app.include_router(uploads_router)
 app.include_router(submissions_router)
+app.include_router(
+    users_router,
+    prefix="/users",
+    tags=["Users"]
+)
